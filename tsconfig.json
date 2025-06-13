@@ -1,0 +1,28 @@
+{
+  "compilerOptions": {
+    /* 기본 옵션 */
+    "target": "ES2022",                       // 최신 LTS Node.js 버전과 호환되는 타겟
+    "module": "NodeNext",                     // Node.js 환경의 ESM 지원
+    "moduleResolution": "NodeNext",           // Node.js의 ESM 모듈 해석 방식 사용
+    "outDir": "./dist",                       // 컴파일된 JS 파일 출력 디렉토리
+    "rootDir": "./src",                     // TypeScript 소스 파일 루트 디렉토리
+    "strict": true,                           // 모든 엄격한 타입 검사 옵션 활성화
+    "esModuleInterop": true,                  // CommonJS 모듈과 ES 모듈 간의 상호 운용성 활성화
+    "skipLibCheck": true,                     // 선언 파일(.d.ts) 타입 검사 건너뛰기
+    "forceConsistentCasingInFileNames": true, // 파일 이름 대소문자 일관성 강제
+
+    /* 추가 옵션 */
+    "resolveJsonModule": true,                // JSON 모듈 임포트 허용
+    "declaration": true,                      // .d.ts 선언 파일 생성
+    // "sourceMap": true,                     // 소스맵 생성 (디버깅용)
+    "baseUrl": ".",                         // 비상대적 모듈 경로의 기준 디렉토리
+    "paths": {                              // 경로 별칭 설정 (예시)
+      "@core/*": ["src/core/*"],
+      "@servlet/*": ["src/servlet/*"],
+      "@spring/*": ["src/spring/*"],
+      "@utils/*": ["src/utils/*"]
+    }
+  },
+  "include": ["src/**/*"],                  // 컴파일 대상 파일 패턴
+  "exclude": ["node_modules", "**/*.spec.ts"] // 컴파일 제외 대상
+} 
