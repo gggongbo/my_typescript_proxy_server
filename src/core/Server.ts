@@ -2,6 +2,7 @@ import http from 'http'; // Node.js 기본 HTTP 모듈 임포트
 import { AddressInfo } from 'net'; // 포트 번호 확인을 위한 타입
 import { Request } from './Request'; // 사용자 정의 Request 클래스
 import { Response } from './Response'; // 사용자 정의 Response 클래스
+import { Router } from './Router'; // 라우팅 시스템
 
 /**
  * HTTP 서버의 핵심 로직을 담당하는 클래스
@@ -9,6 +10,7 @@ import { Response } from './Response'; // 사용자 정의 Response 클래스
 export class Server {
   private port: number; // 서버가 리스닝할 포트 번호
   private httpServer: http.Server | null = null; // 실제 Node.js HTTP 서버 인스턴스
+  private router: Router; // 라우팅 시스템
 
   /**
    * Server 인스턴스를 생성합니다.
@@ -16,7 +18,10 @@ export class Server {
    */
   constructor(port: number = 8080) {
     this.port = port;
-    // 생성자: 포트 번호 저장, httpServer는 null 초기화 (start에서 생성)
+    this.router = new Router();
+    
+    // 기본 라우트들 설정
+    this.setupDefaultRoutes();
   }
 
   /**
@@ -73,32 +78,108 @@ export class Server {
   }
 
   /**
-   * 개별 요청을 처리하는 메소드
-   * 향후 라우팅 시스템으로 확장될 예정
-   * @param request 추상화된 요청 객체
-   * @param response 추상화된 응답 객체
+   * 기본 라우트들을 설정하는 메소드
    */
-  private async handleRequest(request: Request, response: Response): Promise<void> {
-    // 기본 라우팅 로직 (현재는 모든 요청에 동일한 응답)
-    
-    // 간단한 경로별 처리 예시
-    if (request.path === '/') {
-      response.html('<h1>Welcome to My TypeScript WAS!</h1><p>Server is running successfully.</p>');
-    } else if (request.path === '/api/health') {
+  private setupDefaultRoutes(): void {
+    // 홈 페이지
+    this.router.get('/', (request, response) => {
+      response.html(`
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <title>My TypeScript WAS</title>
+            <style>
+              body { font-family: Arial, sans-serif; max-width: 800px; margin: 50px auto; padding: 20px; }
+              h1 { color: #2c3e50; }
+              .info { background: #ecf0f1; padding: 15px; border-radius: 5px; margin: 20px 0; }
+              .endpoint { font-family: monospace; background: #34495e; color: white; padding: 2px 6px; border-radius: 3px; }
+            </style>
+          </head>
+          <body>
+            <h1>Welcome to My TypeScript WAS!</h1>
+            <p>서버가 성공적으로 실행되고 있습니다.</p>
+            
+            <div class="info">
+              <h3>사용 가능한 엔드포인트:</h3>
+              <ul>
+                <li><span class="endpoint">GET /</span> - 이 페이지</li>
+                <li><span class="endpoint">GET /api/health</span> - 서버 상태 정보</li>
+                <li><span class="endpoint">GET /hello?name=이름</span> - 인사말</li>
+                <li><span class="endpoint">GET /users/:id</span> - 사용자 정보 (매개변수 예시)</li>
+                <li><span class="endpoint">POST /api/echo</span> - 요청 본문 에코</li>
+              </ul>
+            </div>
+          </body>
+        </html>
+      `);
+    });
+
+    // 서버 상태 API
+    this.router.get('/api/health', (request, response) => {
       response.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
         method: request.method,
-        path: request.path
+        path: request.path,
+        routes: this.router.getRouteCount()
       });
-    } else if (request.path === '/hello') {
+    });
+
+    // 인사말 (쿼리 파라미터 예시)
+    this.router.get('/hello', (request, response) => {
       const name = request.getQueryParam('name') || 'World';
-      response.text(`Hello, ${name}!`);
-    } else {
-      // 404 처리
-      response.status(404).html('<h1>404 - Page Not Found</h1>');
-    }
+      response.text(`Hello, ${name}! 🎉`);
+    });
+
+    // 경로 매개변수 예시
+    this.router.get('/users/:id', (request, response, params) => {
+      const userId = params?.id || 'unknown';
+      response.json({
+        message: '사용자 정보',
+        userId: userId,
+        userAgent: request.getUserAgent(),
+        clientIP: request.getClientIP()
+      });
+    });
+
+    // POST 요청 예시 (요청 본문 처리)
+    this.router.post('/api/echo', async (request, response) => {
+      try {
+        const body = await request.getBody();
+        const contentType = request.getContentType();
+        
+        response.json({
+          message: '요청 본문을 그대로 반환합니다',
+          originalBody: body,
+          contentType: contentType,
+          contentLength: request.getContentLength()
+        });
+      } catch (error) {
+        response.status(400).json({
+          error: '요청 본문을 읽을 수 없습니다',
+          message: error instanceof Error ? error.message : 'Unknown error'
+        });
+      }
+    });
+  }
+
+  /**
+   * 요청을 라우터로 전달하는 메소드
+   * @param request 추상화된 요청 객체
+   * @param response 추상화된 응답 객체
+   */
+  private async handleRequest(request: Request, response: Response): Promise<void> {
+    // 라우터에 요청 처리 위임
+    await this.router.handle(request, response);
+  }
+
+  /**
+   * 라우터에 접근하여 추가 라우트를 등록할 수 있습니다
+   * @returns Router 인스턴스
+   */
+  public getRouter(): Router {
+    return this.router;
   }
 
   /**
