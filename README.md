@@ -1,10 +1,10 @@
-# My TypeScript WAS
+# My TypeScript Proxy Server
 
-TypeScript로 개발하는 WAS(Web Application Server) 프로젝트입니다.
+TypeScript로 개발하는 프록시 서버 프로젝트입니다.
 
 ## 목표
 
-- Tomcat과 유사한 기능을 제공하는 WAS 구현
+- Tomcat과 유사한 기능을 제공하는 프록시 서버 구현
 - Spring Framework와 연동하여 사용할 수 있도록 호환성 확보
 - TypeScript를 사용하여 개발
 
@@ -16,7 +16,7 @@ TypeScript로 개발하는 WAS(Web Application Server) 프로젝트입니다.
 ## 프로젝트 구조
 
 ```
-my_typescript_was/
+my_typescript_proxy_server/
 ├── src/              # 소스 코드 루트
 │   ├── core/         # HTTP 서버, 요청/응답 처리 등 핵심 로직
 │   ├── servlet/      # 서블릿 컨테이너 관련 구현
@@ -48,15 +48,15 @@ my_typescript_was/
 ## Spring Framework 연동
 
 ### 개요
-TypeScript WAS는 HTTP 프록시 방식으로 Spring Framework 애플리케이션과 연동됩니다:
-- **TypeScript WAS**: 포트 8080 (프론트엔드 WAS 역할)
+TypeScript 프록시 서버는 HTTP 프록시 방식으로 Spring Framework 애플리케이션과 연동됩니다:
+- **TypeScript 프록시 서버**: 포트 8080 (프론트엔드 프록시 역할)
 - **Spring Application**: 포트 8081 (백엔드 애플리케이션 역할)
 
 ### 주요 기능
 
 #### 1. 자동 Spring 컨트롤러 매핑
 - Spring Boot Actuator의 `/actuator/mappings` 엔드포인트에서 메타데이터 수집
-- `@RequestMapping`, `@GetMapping` 등의 Spring 컨트롤러 경로를 자동으로 TypeScript WAS 라우터에 등록
+- `@RequestMapping`, `@GetMapping` 등의 Spring 컨트롤러 경로를 자동으로 TypeScript 프록시 서버 라우터에 등록
 - 클라이언트 요청을 적절한 Spring 컨트롤러로 프록시
 
 #### 2. 설정 파일 통합
@@ -65,7 +65,7 @@ TypeScript WAS는 HTTP 프록시 방식으로 Spring Framework 애플리케이�
 - Spring 애플리케이션 포트, 컨텍스트 경로 등 설정 동기화
 
 #### 3. 세션 관리
-- TypeScript WAS와 Spring 간 세션 정보 공유
+- TypeScript 프록시 서버와 Spring 간 세션 정보 공유
 - 쿠키 기반 세션 ID 관리
 - Spring Security 인증 정보 동기화
 - 메모리/Redis 기반 세션 저장소 지원
@@ -79,7 +79,7 @@ TypeScript WAS는 HTTP 프록시 방식으로 Spring Framework 애플리케이�
 
 #### 🚀 빠른 시작 (통합 실행)
 ```bash
-# Spring Boot + TypeScript WAS 동시 실행
+# Spring Boot + TypeScript 프록시 서버 동시 실행
 ./start-all.sh
 ```
 
@@ -94,13 +94,13 @@ TypeScript WAS는 HTTP 프록시 방식으로 Spring Framework 애플리케이�
    ./gradlew bootRun
    ```
 
-2. **TypeScript WAS 실행** (터미널 2)
+2. **TypeScript 프록시 서버 실행** (터미널 2)
    ```bash
    npm run dev
    ```
 
 #### 📋 연동 확인
-- **TypeScript WAS**: http://localhost:8080
+- **TypeScript 프록시 서버**: http://localhost:8080
 - **Spring Boot**: http://localhost:8081
 - **Spring Health Check**: http://localhost:8081/actuator/health
 - **Spring API 매핑**: http://localhost:8081/actuator/mappings
@@ -117,7 +117,7 @@ TypeScript WAS는 HTTP 프록시 방식으로 Spring Framework 애플리케이�
 ```
 클라이언트 요청
       ↓
-TypeScript WAS (8080)
+TypeScript 프록시 서버 (8080)
 ├── 정적 파일 처리
 ├── 세션 관리
 ├── Spring 매핑 확인
@@ -137,7 +137,7 @@ Spring Application
 ```mermaid
 sequenceDiagram
     participant Client as 클라이언트<br/>(브라우저/curl)
-    participant TypeScript as TypeScript WAS<br/>(포트 8080)
+    participant TypeScript as TypeScript 프록시 서버<br/>(포트 8080)
     participant Spring as Spring Boot<br/>(포트 8081)
     
     Note over TypeScript, Spring: 🚀 시작 시 연동 과정
@@ -153,7 +153,7 @@ sequenceDiagram
     
     Client->>TypeScript: GET /actuator/health
     
-    alt TypeScript WAS 자체 헬스체크인 경우
+    alt TypeScript 프록시 서버 자체 헬스체크인 경우
         TypeScript->>TypeScript: 라우터에서 /actuator/health 확인
         Note over TypeScript: 등록된 라우트 없음<br/>→ 404 또는 기본 처리
         TypeScript-->>Client: 404 Not Found
@@ -177,7 +177,7 @@ sequenceDiagram
 #### 📋 연동 과정 상세 설명
 
 1. **초기 연동 설정**:
-   - TypeScript WAS가 시작되면 `spring_example/src/main/resources/application.properties` 파일을 파싱
+   - TypeScript 프록시 서버가 시작되면 `spring_example/src/main/resources/application.properties` 파일을 파싱
    - Spring Boot 애플리케이션의 포트(8081), Actuator 엔드포인트 경로 등을 확인
 
 2. **Spring Boot 상태 확인**:
@@ -189,11 +189,11 @@ sequenceDiagram
    - `@GetMapping`, `@PostMapping` 등의 어노테이션으로 정의된 경로들을 자동 감지
 
 4. **동적 라우트 등록**:
-   - 수집한 Spring 매핑을 TypeScript WAS의 라우터에 프록시 핸들러로 등록
+   - 수집한 Spring 매핑을 TypeScript 프록시 서버의 라우터에 프록시 핸들러로 등록
    - 클라이언트 요청이 들어오면 해당 경로를 Spring Boot로 전달
 
 5. **요청 프록시 처리**:
-   - 클라이언트 요청을 받으면 먼저 TypeScript WAS 자체 라우트 확인
+   - 클라이언트 요청을 받으면 먼저 TypeScript 프록시 서버 자체 라우트 확인
    - Spring 매핑이 있으면 세션 정보와 함께 Spring Boot로 프록시
    - Spring Boot 응답을 클라이언트에게 그대로 전달
 

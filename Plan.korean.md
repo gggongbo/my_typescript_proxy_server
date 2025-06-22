@@ -1,6 +1,6 @@
-# My TypeScript WAS 개발 계획
+# My TypeScript Proxy Server 개발 계획
 
-TypeScript 기반의 Spring Framework 호환 WAS 개발을 위해, 다음과 같은 순서로 기능을 구현합니다.
+TypeScript 기반의 Spring Framework 호환 프록시 서버 개발을 위해, 다음과 같은 순서로 기능을 구현합니다.
 
 1.  **HTTP 서버 코어 구축 (`src/core`)**:
 
@@ -9,7 +9,7 @@ TypeScript 기반의 Spring Framework 호환 WAS 개발을 위해, 다음과 같
 
 2.  **요청/응답 객체 추상화 (`src/core`)**:
 
-    - Node.js의 기본 `IncomingMessage`, `ServerResponse` 대신 WAS 내부에서 사용하기 편리한 독자적인 `Request`, `Response` 클래스/인터페이스를 정의합니다.
+    - Node.js의 기본 `IncomingMessage`, `ServerResponse` 대신 프록시 서버 내부에서 사용하기 편리한 독자적인 `Request`, `Response` 클래스/인터페이스를 정의합니다.
     - 목표: 헤더, 메소드, URL, 파라미터, 본문 등의 쉬운 접근 및 응답 설정 표준화.
 
 3.  **기본 라우팅 시스템 구현 (`src/core`)**:
@@ -29,20 +29,20 @@ TypeScript 기반의 Spring Framework 호환 WAS 개발을 위해, 다음과 같
 6.  **Spring Framework 연동 브릿지 구현 (`src/spring`, `src/servlet`)**:
 
     - **HTTP 프록시 방식으로 Spring Framework와 연동**:
-      - TypeScript WAS가 독립 프로세스로 실행 (포트 8080)
+      - TypeScript 프록시 서버가 독립 프로세스로 실행 (포트 8080)
       - Spring Framework 애플리케이션을 별도 포트에서 실행 (포트 8081)
-      - TypeScript WAS에서 Spring으로 HTTP 요청 프록시 기능 구현
+      - TypeScript 프록시 서버에서 Spring으로 HTTP 요청 프록시 기능 구현
     - **Spring MVC 컨트롤러 동적 로딩**:
       - Spring 애플리케이션의 `@RequestMapping` 정보를 REST API로 수집
-      - TypeScript WAS의 라우터에 Spring 컨트롤러 경로 자동 등록
+      - TypeScript 프록시 서버의 라우터에 Spring 컨트롤러 경로 자동 등록
       - 요청 시 적절한 Spring 컨트롤러로 HTTP 요청 전달
     - **설정 파일 통합**:
       - `application.properties` 파일을 TypeScript에서도 읽을 수 있도록 파서 구현
       - Spring의 `server.port`, `server.servlet.context-path` 등 설정 동기화
     - **세션 및 상태 관리**:
-      - TypeScript WAS와 Spring 간 세션 정보 공유 메커니즘
+      - TypeScript 프록시 서버와 Spring 간 세션 정보 공유 메커니즘
       - 쿠키, JWT 토큰 등을 통한 상태 동기화
-    - **핵심 목표: Spring Framework 애플리케이션의 프론트엔드 WAS 역할 수행.**
+    - **핵심 목표: Spring Framework 애플리케이션의 프론트엔드 프록시 서버 역할 수행.**
 
 7.  **고급 기능 및 Tomcat 호환성 고려**:
 

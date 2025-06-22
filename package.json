@@ -1,5 +1,5 @@
 {
-  "name": "my-typescript-was",
+  "name": "my-typescript-proxy-server",
   "version": "0.0.1",
   "description": "A custom Web Application Server built with TypeScript",
   "main": "dist/index.js",
@@ -14,7 +14,7 @@
     "start:all": "./start-all.sh"
   },
   "keywords": [
-    "was",
+    "proxy",
     "typescript",
     "server",
     "http",
