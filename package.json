@@ -9,7 +9,9 @@
     "dev": "ts-node src/index.ts",
     "test": "jest",
     "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage"
+    "test:coverage": "jest --coverage",
+    "spring:start": "./start-spring.sh",
+    "start:all": "./start-all.sh"
   },
   "keywords": [
     "was",

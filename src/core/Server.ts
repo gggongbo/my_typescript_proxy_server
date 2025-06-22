@@ -271,7 +271,7 @@ export class Server {
   private async setupSpringBridge(): Promise<void> {
     try {
       // 설정 파일 로드
-      const config = await this.configParser.loadConfig('./application.properties');
+      const config = await this.configParser.loadConfig('./spring_example/src/main/resources/application.properties');
       console.log('[Server] Spring config loaded:', {
         springPort: config.server.port,
         contextPath: config.server.contextPath,
