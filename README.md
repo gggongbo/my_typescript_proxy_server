@@ -4,8 +4,7 @@ TypeScript로 개발하는 프록시 서버 프로젝트입니다.
 
 ## 목표
 
-- Tomcat과 유사한 기능을 제공하는 프록시 서버 구현
-- Spring Framework와 연동하여 사용할 수 있도록 호환성 확보
+- Spring Framework와 연동하여 사용할 수 있는 프록시 서버 구현
 - TypeScript를 사용하여 개발
 
 ## 개발 환경

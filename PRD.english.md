@@ -7,16 +7,14 @@ The following table outlines the functional requirements of the My TypeScript Pr
 | EN001          | Basic HTTP Request/Response      | As a user, I want to be able to send basic HTTP requests to the proxy server and receive responses.                                           | The system should parse incoming HTTP requests (GET, POST, etc.), execute appropriate logic, and generate valid HTTP responses (status code, headers, body) to return to the client.                                             |
 | EN002          | Servlet Container Implementation | As a developer, I want to be able to write application logic similar to servlets and deploy it to the proxy server.                           | The system should provide a container environment capable of loading and executing user-defined code adhering to a specific interface. It should execute the appropriate code based on the request URL and manage its lifecycle. |
 | EN003          | Spring Framework Integration     | As a developer, I want to be able to use the developed proxy server as an embedded server for my Spring Framework application.                | The system must be compatible with the standard Servlet API or related interfaces of Spring Boot or Spring Framework. It should be able to load the Spring application context and delegate request handling.                    |
-| EN004          | Tomcat Compatibility (Partial)   | As a user, I want to be able to run some features of existing Tomcat-based applications on the proxy server with no or minimal modifications. | The system should implement or provide compatibility for some core Tomcat features (e.g., basic configuration file structure, logging methods) to reduce migration costs. (Specific compatibility scope to be defined later)     |
-| EN005          | TypeScript-Based Development     | As a developer, I want to be able to develop and manage the entire project codebase using TypeScript.                                | All system code must be written in TypeScript, leveraging type safety and modern JavaScript features. The compilation and build process must be configured for a TypeScript environment.                                         |
+| EN004          | TypeScript-Based Development     | As a developer, I want to be able to develop and manage the entire project codebase using TypeScript.                                | All system code must be written in TypeScript, leveraging type safety and modern JavaScript features. The compilation and build process must be configured for a TypeScript environment.                                         |
 
 ## Checklist
 
 - [ ] EN001: Basic HTTP Request/Response Handling
 - [ ] EN002: Servlet Container Feature Implementation
 - [ ] EN003: Spring Framework Integration
-- [ ] EN004: Tomcat Compatibility (Partial)
-- [ ] EN005: TypeScript-Based Development
+- [ ] EN004: TypeScript-Based Development
 
 ## Detail
 
