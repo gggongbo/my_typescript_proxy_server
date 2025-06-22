@@ -26,11 +26,23 @@ TypeScript 기반의 Spring Framework 호환 WAS 개발을 위해, 다음과 같
     - 정의된 핸들러들을 로드/관리하고, 라우터를 통해 들어온 요청을 적절한 핸들러로 전달하는 컨테이너 로직을 구현합니다.
     - 목표: 핸들러 생명주기 관리 기초 마련.
 
-6.  **Spring Framework 연동 인터페이스 개발 (`src/spring`, `src/servlet`)**:
+6.  **Spring Framework 연동 브릿지 구현 (`src/spring`, `src/servlet`)**:
 
-    - Spring Boot 내장 서버로 사용될 수 있도록 표준 서블릿 API(예: `HttpServletRequest`, `HttpServletResponse`)와 유사한 호환 레이어를 구현합니다.
-    - 또는 Spring Boot 내장 서버 연동 방식(`WebServerFactory` 등)을 분석하여 연동 포인트를 구현합니다.
-    - **핵심 목표: Spring Framework와의 호환성 확보.**
+    - **HTTP 프록시 방식으로 Spring Framework와 연동**:
+      - TypeScript WAS가 독립 프로세스로 실행 (포트 8080)
+      - Spring Framework 애플리케이션을 별도 포트에서 실행 (포트 8081)
+      - TypeScript WAS에서 Spring으로 HTTP 요청 프록시 기능 구현
+    - **Spring MVC 컨트롤러 동적 로딩**:
+      - Spring 애플리케이션의 `@RequestMapping` 정보를 REST API로 수집
+      - TypeScript WAS의 라우터에 Spring 컨트롤러 경로 자동 등록
+      - 요청 시 적절한 Spring 컨트롤러로 HTTP 요청 전달
+    - **설정 파일 통합**:
+      - `application.properties` 파일을 TypeScript에서도 읽을 수 있도록 파서 구현
+      - Spring의 `server.port`, `server.servlet.context-path` 등 설정 동기화
+    - **세션 및 상태 관리**:
+      - TypeScript WAS와 Spring 간 세션 정보 공유 메커니즘
+      - 쿠키, JWT 토큰 등을 통한 상태 동기화
+    - **핵심 목표: Spring Framework 애플리케이션의 프론트엔드 WAS 역할 수행.**
 
 7.  **고급 기능 및 Tomcat 호환성 고려**:
 

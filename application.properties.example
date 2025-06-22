@@ -1,0 +1,45 @@
+# Spring Application Configuration
+# TypeScript WAS와 연동을 위한 설정 예시
+
+# 서버 설정
+server.port=8081
+server.servlet.context-path=
+
+# Spring 애플리케이션 설정
+spring.application.name=my-spring-app
+spring.profiles.active=default
+
+# Actuator 관리 엔드포인트 설정 (TypeScript WAS가 메타데이터를 수집하기 위해 필요)
+management.endpoints.web.base-path=/actuator
+management.endpoints.web.exposure.include=health,info,mappings
+management.endpoint.health.show-details=when-authorized
+management.endpoint.mappings.enabled=true
+
+# 로깅 설정
+logging.level.org.springframework.web=DEBUG
+logging.level.org.springframework.boot.actuate=DEBUG
+
+# 데이터베이스 설정 (필요시)
+# spring.datasource.url=jdbc:h2:mem:testdb
+# spring.datasource.driverClassName=org.h2.Driver
+# spring.datasource.username=sa
+# spring.datasource.password=password
+# spring.h2.console.enabled=true
+
+# JPA 설정 (필요시)
+# spring.jpa.database-platform=org.hibernate.dialect.H2Dialect
+# spring.jpa.hibernate.ddl-auto=update
+# spring.jpa.show-sql=true
+
+# 세션 설정 (TypeScript WAS와 세션 공유를 위해)
+# server.servlet.session.cookie.name=SPRING_SESSION
+# server.servlet.session.timeout=30m
+# server.servlet.session.cookie.max-age=1800
+# server.servlet.session.cookie.http-only=true
+# server.servlet.session.cookie.secure=false
+
+# CORS 설정 (TypeScript WAS에서 접근 허용)
+# spring.web.cors.allowed-origins=http://localhost:8080
+# spring.web.cors.allowed-methods=GET,POST,PUT,DELETE,OPTIONS
+# spring.web.cors.allowed-headers=*
+# spring.web.cors.allow-credentials=true 

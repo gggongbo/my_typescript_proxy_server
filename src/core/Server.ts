@@ -6,6 +6,9 @@ import { Router } from './Router'; // 라우팅 시스템
 import { ServletContainer } from '../servlet/ServletContainer'; // 서블릿 컨테이너
 import { HelloServlet } from '../servlet/examples/HelloServlet'; // Hello World 서블릿
 import { ApiServlet } from '../servlet/examples/ApiServlet'; // API 서블릿
+import { SpringBridge } from '../spring/SpringBridge'; // Spring Framework 브릿지
+import { ConfigParser } from '../spring/ConfigParser'; // Spring 설정 파서
+import { SessionManager, MemorySessionStore } from '../spring/SessionManager'; // 세션 관리자
 
 
 
@@ -17,6 +20,10 @@ export class Server {
   private httpServer: http.Server | null = null; // 실제 Node.js HTTP 서버 인스턴스
   private router: Router; // 라우팅 시스템
   private servletContainer: ServletContainer; // 서블릿 컨테이너
+  private springBridge: SpringBridge | null = null; // Spring Framework 브릿지
+  private configParser: ConfigParser; // Spring 설정 파서
+  private sessionManager: SessionManager; // 세션 관리자
+  private springEnabled = false; // Spring 연동 활성화 여부
 
   /**
    * Server 인스턴스를 생성합니다.
@@ -26,6 +33,10 @@ export class Server {
     this.port = port;
     this.router = new Router();
     this.servletContainer = new ServletContainer();
+    
+    // Spring 관련 컴포넌트 초기화
+    this.configParser = new ConfigParser();
+    this.sessionManager = new SessionManager(new MemorySessionStore());
     
     // 기본 라우트들 설정
     this.setupDefaultRoutes();
@@ -43,6 +54,9 @@ export class Server {
     // 서블릿 컨테이너 설정 및 시작
     await this.setupDefaultServlets();
     await this.servletContainer.start();
+
+    // Spring 브릿지 초기화 (선택적)
+    await this.setupSpringBridge();
 
     // 1. http.createServer()로 서버 인스턴스 생성 및 요청 핸들러 등록
     this.httpServer = http.createServer(
@@ -131,6 +145,17 @@ export class Server {
                 <li><span class="endpoint">PUT /servlet/api</span> - API 서블릿 (데이터 업데이트)</li>
                 <li><span class="endpoint">DELETE /servlet/api?id=값</span> - API 서블릿 (데이터 삭제)</li>
               </ul>
+            </div>
+            
+            <div class="info">
+              <h3>🌸 Spring Framework 연동:</h3>
+              <p><strong>상태:</strong> ${this.springEnabled ? '🟢 연결됨' : '🔴 비활성화'}</p>
+              ${this.springEnabled ? `
+                <p>Spring 애플리케이션(포트 ${this.springBridge?.getMetadata()?.port || 8081})과 연동되어 있습니다.</p>
+                <p>Spring 컨트롤러의 모든 엔드포인트가 자동으로 프록시됩니다.</p>
+              ` : `
+                <p>Spring 애플리케이션을 포트 8081에서 실행하고 application.properties 파일을 제공하면 자동으로 연동됩니다.</p>
+              `}
             </div>
           </body>
         </html>
@@ -241,6 +266,89 @@ export class Server {
   }
 
   /**
+   * Spring 브릿지를 설정하는 메소드
+   */
+  private async setupSpringBridge(): Promise<void> {
+    try {
+      // 설정 파일 로드
+      const config = await this.configParser.loadConfig('./application.properties');
+      console.log('[Server] Spring config loaded:', {
+        springPort: config.server.port,
+        contextPath: config.server.contextPath,
+        profiles: config.spring.profiles.active
+      });
+
+      // 환경 변수 오버라이드
+      this.configParser.loadEnvironmentOverrides();
+
+      // Spring 애플리케이션이 있는지 확인하고 브릿지 초기화
+      this.springBridge = new SpringBridge({
+        springPort: config.server.port,
+        springContextPath: config.server.contextPath,
+        healthCheckPath: `${config.management.endpoints.web.basePath}/health`,
+        metadataPath: `${config.management.endpoints.web.basePath}/mappings`,
+      });
+
+      try {
+        await this.springBridge.start();
+        this.springEnabled = true;
+        console.log('[Server] Spring integration enabled');
+
+        // Spring 매핑을 라우터에 동적으로 추가
+        await this.registerSpringRoutes();
+
+      } catch (error) {
+        console.log('[Server] Spring application not available, running without Spring integration');
+        this.springBridge = null;
+        this.springEnabled = false;
+      }
+
+    } catch (error) {
+      console.log('[Server] Spring configuration not found or invalid, running in standalone mode');
+      this.springEnabled = false;
+    }
+  }
+
+  /**
+   * Spring 매핑을 TypeScript WAS 라우터에 등록
+   */
+  private async registerSpringRoutes(): Promise<void> {
+    if (!this.springBridge || !this.springBridge.isReady()) {
+      return;
+    }
+
+    const metadata = this.springBridge.getMetadata();
+    if (!metadata) {
+      return;
+    }
+
+    console.log(`[Server] Registering ${metadata.mappings.length} Spring routes...`);
+
+    // Spring 매핑을 TypeScript WAS 라우터에 동적으로 추가
+    for (const mapping of metadata.mappings) {
+      // Spring 컨트롤러로 프록시하는 핸들러 생성
+      const proxyHandler = async (request: Request, response: Response) => {
+        // 세션 처리
+        const session = await this.sessionManager.getOrCreateSession(request, response);
+        
+        // Spring으로 세션 정보 전달
+        const sessionHeaders = this.sessionManager.createSpringSessionHeaders(session);
+        Object.assign(request.headers, sessionHeaders);
+
+        // Spring으로 요청 프록시
+        await this.springBridge!.proxyRequest(request, response);
+      };
+
+      // 라우터에 Spring 매핑 등록
+      const method = mapping.method.toLowerCase() as 'get' | 'post' | 'put' | 'delete';
+      if (['get', 'post', 'put', 'delete'].includes(method)) {
+        this.router[method](mapping.path, proxyHandler);
+        console.log(`[Server] Registered Spring route: ${mapping.method} ${mapping.path} -> ${mapping.className}.${mapping.methodName}`);
+      }
+    }
+  }
+
+  /**
    * HTTP 서버를 중지합니다.
    * Promise를 반환하여 비동기 완료를 알립니다.
    * @returns 서버 중지 완료 시 resolve되는 Promise
@@ -264,6 +372,22 @@ export class Server {
             await this.servletContainer.stop();
           } catch (containerError) {
             console.error('Error stopping servlet container:', containerError);
+          }
+
+          // 6. Spring 브릿지 정리
+          if (this.springBridge) {
+            try {
+              await this.springBridge.stop();
+            } catch (springError) {
+              console.error('Error stopping Spring bridge:', springError);
+            }
+          }
+
+          // 7. 세션 매니저 정리
+          try {
+            await this.sessionManager.destroy();
+          } catch (sessionError) {
+            console.error('Error destroying session manager:', sessionError);
           }
           
           // 6. 중지 완료 로그 및 Promise resolve
