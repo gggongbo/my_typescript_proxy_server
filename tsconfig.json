@@ -2,8 +2,8 @@
   "compilerOptions": {
     /* 기본 옵션 */
     "target": "ES2022",                       // 최신 LTS Node.js 버전과 호환되는 타겟
-    "module": "NodeNext",                     // Node.js 환경의 ESM 지원
-    "moduleResolution": "NodeNext",           // Node.js의 ESM 모듈 해석 방식 사용
+    "module": "CommonJS",                     // CommonJS 지원
+    "moduleResolution": "Node",               // Node.js 모듈 해석 방식 사용
     "outDir": "./dist",                       // 컴파일된 JS 파일 출력 디렉토리
     "rootDir": "./src",                     // TypeScript 소스 파일 루트 디렉토리
     "strict": true,                           // 모든 엄격한 타입 검사 옵션 활성화

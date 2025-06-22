@@ -1,4 +1,4 @@
-import { Server } from './core/Server.js'; // 상대 경로 사용 및 .js 확장자 추가
+import { Server } from './core/Server'; // 상대 경로 사용
 
 /**
  * 애플리케이션의 메인 진입점 파일

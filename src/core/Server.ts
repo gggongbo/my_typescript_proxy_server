@@ -1,5 +1,7 @@
 import http from 'http'; // Node.js 기본 HTTP 모듈 임포트
 import { AddressInfo } from 'net'; // 포트 번호 확인을 위한 타입
+import { Request } from './Request'; // 사용자 정의 Request 클래스
+import { Response } from './Response'; // 사용자 정의 Response 클래스
 
 /**
  * HTTP 서버의 핵심 로직을 담당하는 클래스
@@ -28,19 +30,26 @@ export class Server {
 
     // 1. http.createServer()로 서버 인스턴스 생성 및 요청 핸들러 등록
     this.httpServer = http.createServer(
-      (req: http.IncomingMessage, res: http.ServerResponse) => {
-        // 2. 요청 핸들러 콜백 내부 구현:
-        //    2-1. [로깅] 요청 메소드 및 URL 기록
-        console.log(
-          `[${new Date().toISOString()}] Received ${req.method} ${req.url}`
-        );
+      async (req: http.IncomingMessage, res: http.ServerResponse) => {
+        // 2. 추상화된 Request/Response 객체 생성
+        const request = new Request(req);
+        const response = new Response(res);
 
-        //    2-2. [기본 응답 처리]
-        res.statusCode = 200; // 상태 코드 200 (OK)
-        res.setHeader('Content-Type', 'text/plain; charset=utf-8'); // 헤더 설정
-        res.end('Hello World from My TypeScript WAS!\n'); // 응답 본문 전송
+        try {
+          // 3. 요청 로깅 (추상화된 API 사용)
+          console.log(
+            `[${new Date().toISOString()}] ${request.method} ${request.url} from ${request.getClientIP()}`
+          );
 
-        //    2-3. [향후 확장] 요청 파싱, 라우팅 등 로직 추가 위치
+          // 4. 기본 응답 처리 (새로운 Response API 사용)
+          await this.handleRequest(request, response);
+        } catch (error) {
+          // 5. 에러 처리
+          console.error('Request handling error:', error);
+          if (!response.finished) {
+            response.status(500).text('Internal Server Error');
+          }
+        }
       }
     );
 
@@ -61,6 +70,35 @@ export class Server {
       const listenPort = typeof address === 'string' ? address : address?.port;
       console.log(`Server listening on port ${listenPort || this.port}`);
     });
+  }
+
+  /**
+   * 개별 요청을 처리하는 메소드
+   * 향후 라우팅 시스템으로 확장될 예정
+   * @param request 추상화된 요청 객체
+   * @param response 추상화된 응답 객체
+   */
+  private async handleRequest(request: Request, response: Response): Promise<void> {
+    // 기본 라우팅 로직 (현재는 모든 요청에 동일한 응답)
+    
+    // 간단한 경로별 처리 예시
+    if (request.path === '/') {
+      response.html('<h1>Welcome to My TypeScript WAS!</h1><p>Server is running successfully.</p>');
+    } else if (request.path === '/api/health') {
+      response.json({
+        status: 'OK',
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        method: request.method,
+        path: request.path
+      });
+    } else if (request.path === '/hello') {
+      const name = request.getQueryParam('name') || 'World';
+      response.text(`Hello, ${name}!`);
+    } else {
+      // 404 처리
+      response.status(404).html('<h1>404 - Page Not Found</h1>');
+    }
   }
 
   /**
