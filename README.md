@@ -40,6 +40,29 @@ my_typescript_was/
 
 ## 구현 내용
 
-- 기본 HTTP 요청/응답 처리 구현
-- 서블릿 컨테이너 기능 구현
-- Spring Framework 연동 모듈 개발
+- ✅ 기본 HTTP 요청/응답 처리 구현 (Request/Response 추상화)
+- ✅ 기본 라우팅 시스템 구현 (Router, Route 클래스)
+- 🚧 서블릿 컨테이너 기능 구현
+- 🚧 Spring Framework 연동 모듈 개발
+
+## 테스트
+
+### 테스트 실행
+```bash
+# 모든 테스트 실행
+npm test
+
+# 테스트 watch 모드 (파일 변경 시 자동 재실행)
+npm run test:watch
+
+# 테스트 커버리지 확인
+npm run test:coverage
+```
+
+### 테스트 종류
+- **API 테스트** (`test/api.test.ts`): 실제 HTTP 요청/응답 테스트
+- **Router 테스트** (`test/router.test.ts`): 라우팅 시스템 단위 테스트
+
+### 테스트 결과
+- ✅ 15개 테스트 모두 통과
+- 📊 테스트 커버리지: 58.06% (핵심 로직 위주)
