@@ -11,8 +11,17 @@ import { Server } from './core/Server'; // 상대 경로 사용
 const server = new Server();
 
 // 2. 생성된 서버 인스턴스의 start() 메소드를 호출하여 서버를 시작합니다.
-console.log('hello server');
-server.start();
+async function startServer() {
+  try {
+    console.log('hello server');
+    await server.start();
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+startServer();
 
 // 3. 우아한 종료(Graceful Shutdown) 처리 로직
 const gracefulShutdown = async (signal: string) => {

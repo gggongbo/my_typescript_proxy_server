@@ -3,7 +3,7 @@ import { AddressInfo } from 'net'; // 포트 번호 확인을 위한 타입
 import { Request } from './Request'; // 사용자 정의 Request 클래스
 import { Response } from './Response'; // 사용자 정의 Response 클래스
 import { Router } from './Router'; // 라우팅 시스템
-import { HttpServlet, ServletConfig } from '../servlet/HttpServlet'; // 서블릿 시스템
+import { ServletContainer } from '../servlet/ServletContainer'; // 서블릿 컨테이너
 import { HelloServlet } from '../servlet/examples/HelloServlet'; // Hello World 서블릿
 import { ApiServlet } from '../servlet/examples/ApiServlet'; // API 서블릿
 
@@ -16,7 +16,7 @@ export class Server {
   private port: number; // 서버가 리스닝할 포트 번호
   private httpServer: http.Server | null = null; // 실제 Node.js HTTP 서버 인스턴스
   private router: Router; // 라우팅 시스템
-  private servlets: Map<string, HttpServlet> = new Map(); // 서블릿 맵
+  private servletContainer: ServletContainer; // 서블릿 컨테이너
 
   /**
    * Server 인스턴스를 생성합니다.
@@ -25,20 +25,24 @@ export class Server {
   constructor(port: number = 8080) {
     this.port = port;
     this.router = new Router();
+    this.servletContainer = new ServletContainer();
     
-    // 기본 라우트들과 서블릿 설정
+    // 기본 라우트들 설정
     this.setupDefaultRoutes();
-    this.setupDefaultServlets();
   }
 
   /**
    * HTTP 서버를 시작하고 요청 리스닝을 시작합니다.
    */
-  public start(): void {
+  public async start(): Promise<void> {
     if (this.httpServer) {
       console.log('Server is already running.');
       return;
     }
+
+    // 서블릿 컨테이너 설정 및 시작
+    await this.setupDefaultServlets();
+    await this.servletContainer.start();
 
     // 1. http.createServer()로 서버 인스턴스 생성 및 요청 핸들러 등록
     this.httpServer = http.createServer(
@@ -186,36 +190,31 @@ export class Server {
   /**
    * 기본 서블릿들을 설정하는 메소드
    */
-  private setupDefaultServlets(): void {
+  private async setupDefaultServlets(): Promise<void> {
     // Hello World 서블릿
     const helloServlet = new HelloServlet();
-    this.registerServlet('/servlet/hello', helloServlet, {
+    await this.servletContainer.registerServlet('/servlet/hello', helloServlet, {
       servletName: 'HelloServlet',
       initParameters: {
         'greeting': 'Hello from TypeScript WAS!'
       }
-    });
+    }, 1); // loadOnStartup: 1
 
     // API 서블릿
     const apiServlet = new ApiServlet();
-    this.registerServlet('/servlet/api', apiServlet, {
+    await this.servletContainer.registerServlet('/servlet/api', apiServlet, {
       servletName: 'ApiServlet',
       initParameters: {
         'version': '1.0.0'
       }
-    });
+    }, 2); // loadOnStartup: 2
   }
 
   /**
-   * 서블릿을 등록하는 메소드
-   * @param path 서블릿 경로
-   * @param servlet 서블릿 인스턴스
-   * @param config 서블릿 설정
+   * 서블릿 컨테이너에 접근
    */
-  public registerServlet(path: string, servlet: HttpServlet, config: ServletConfig): void {
-    servlet.init(config);
-    this.servlets.set(path, servlet);
-    console.log(`Servlet registered: ${config.servletName} at ${path}`);
+  public getServletContainer(): ServletContainer {
+    return this.servletContainer;
   }
 
   /**
@@ -224,16 +223,13 @@ export class Server {
    * @param response 추상화된 응답 객체
    */
   private async handleRequest(request: Request, response: Response): Promise<void> {
-    // 먼저 서블릿 경로 확인
-    for (const [servletPath, servlet] of this.servlets) {
-      if (request.path.startsWith(servletPath)) {
-        await servlet.service(request, response);
-        return;
-      }
+    // 먼저 서블릿 컨테이너에서 처리 시도
+    const servletHandled = await this.servletContainer.handleRequest(request, response);
+    
+    if (!servletHandled) {
+      // 서블릿에서 처리되지 않으면 라우터에 위임
+      await this.router.handle(request, response);
     }
-
-    // 서블릿에서 처리되지 않으면 라우터에 위임
-    await this.router.handle(request, response);
   }
 
   /**
@@ -255,14 +251,22 @@ export class Server {
       if (this.httpServer && this.httpServer.listening) {
         console.log('Stopping server...');
         // 2. 서버 중지
-        this.httpServer.close((error) => {
+        this.httpServer.close(async (error) => {
           if (error) {
             // 4. 에러 처리
             console.error('Error closing server:', error);
             reject(error); // Promise reject
             return;
           }
-          // 3. 중지 완료 로그 및 Promise resolve
+          
+          // 5. 서블릿 컨테이너 정리
+          try {
+            await this.servletContainer.stop();
+          } catch (containerError) {
+            console.error('Error stopping servlet container:', containerError);
+          }
+          
+          // 6. 중지 완료 로그 및 Promise resolve
           console.log('Server stopped successfully.');
           this.httpServer = null; // 서버 인스턴스 정리
           resolve(); // Promise resolve
