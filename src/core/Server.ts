@@ -3,6 +3,11 @@ import { AddressInfo } from 'net'; // 포트 번호 확인을 위한 타입
 import { Request } from './Request'; // 사용자 정의 Request 클래스
 import { Response } from './Response'; // 사용자 정의 Response 클래스
 import { Router } from './Router'; // 라우팅 시스템
+import { HttpServlet, ServletConfig } from '../servlet/HttpServlet'; // 서블릿 시스템
+import { HelloServlet } from '../servlet/examples/HelloServlet'; // Hello World 서블릿
+import { ApiServlet } from '../servlet/examples/ApiServlet'; // API 서블릿
+
+
 
 /**
  * HTTP 서버의 핵심 로직을 담당하는 클래스
@@ -11,6 +16,7 @@ export class Server {
   private port: number; // 서버가 리스닝할 포트 번호
   private httpServer: http.Server | null = null; // 실제 Node.js HTTP 서버 인스턴스
   private router: Router; // 라우팅 시스템
+  private servlets: Map<string, HttpServlet> = new Map(); // 서블릿 맵
 
   /**
    * Server 인스턴스를 생성합니다.
@@ -20,8 +26,9 @@ export class Server {
     this.port = port;
     this.router = new Router();
     
-    // 기본 라우트들 설정
+    // 기본 라우트들과 서블릿 설정
     this.setupDefaultRoutes();
+    this.setupDefaultServlets();
   }
 
   /**
@@ -100,13 +107,25 @@ export class Server {
             <p>서버가 성공적으로 실행되고 있습니다.</p>
             
             <div class="info">
-              <h3>사용 가능한 엔드포인트:</h3>
+              <h3>🌐 기본 라우트 엔드포인트:</h3>
               <ul>
                 <li><span class="endpoint">GET /</span> - 이 페이지</li>
                 <li><span class="endpoint">GET /api/health</span> - 서버 상태 정보</li>
                 <li><span class="endpoint">GET /hello?name=이름</span> - 인사말</li>
                 <li><span class="endpoint">GET /users/:id</span> - 사용자 정보 (매개변수 예시)</li>
                 <li><span class="endpoint">POST /api/echo</span> - 요청 본문 에코</li>
+              </ul>
+            </div>
+            
+            <div class="info">
+              <h3>⚙️ 서블릿 엔드포인트:</h3>
+              <ul>
+                <li><span class="endpoint">GET /servlet/hello?name=이름</span> - Hello World 서블릿</li>
+                <li><span class="endpoint">POST /servlet/hello</span> - Hello World 서블릿 (POST)</li>
+                <li><span class="endpoint">GET /servlet/api</span> - API 서블릿 정보</li>
+                <li><span class="endpoint">POST /servlet/api</span> - API 서블릿 (데이터 생성)</li>
+                <li><span class="endpoint">PUT /servlet/api</span> - API 서블릿 (데이터 업데이트)</li>
+                <li><span class="endpoint">DELETE /servlet/api?id=값</span> - API 서블릿 (데이터 삭제)</li>
               </ul>
             </div>
           </body>
@@ -165,12 +184,55 @@ export class Server {
   }
 
   /**
-   * 요청을 라우터로 전달하는 메소드
+   * 기본 서블릿들을 설정하는 메소드
+   */
+  private setupDefaultServlets(): void {
+    // Hello World 서블릿
+    const helloServlet = new HelloServlet();
+    this.registerServlet('/servlet/hello', helloServlet, {
+      servletName: 'HelloServlet',
+      initParameters: {
+        'greeting': 'Hello from TypeScript WAS!'
+      }
+    });
+
+    // API 서블릿
+    const apiServlet = new ApiServlet();
+    this.registerServlet('/servlet/api', apiServlet, {
+      servletName: 'ApiServlet',
+      initParameters: {
+        'version': '1.0.0'
+      }
+    });
+  }
+
+  /**
+   * 서블릿을 등록하는 메소드
+   * @param path 서블릿 경로
+   * @param servlet 서블릿 인스턴스
+   * @param config 서블릿 설정
+   */
+  public registerServlet(path: string, servlet: HttpServlet, config: ServletConfig): void {
+    servlet.init(config);
+    this.servlets.set(path, servlet);
+    console.log(`Servlet registered: ${config.servletName} at ${path}`);
+  }
+
+  /**
+   * 요청을 라우터 또는 서블릿으로 전달하는 메소드
    * @param request 추상화된 요청 객체
    * @param response 추상화된 응답 객체
    */
   private async handleRequest(request: Request, response: Response): Promise<void> {
-    // 라우터에 요청 처리 위임
+    // 먼저 서블릿 경로 확인
+    for (const [servletPath, servlet] of this.servlets) {
+      if (request.path.startsWith(servletPath)) {
+        await servlet.service(request, response);
+        return;
+      }
+    }
+
+    // 서블릿에서 처리되지 않으면 라우터에 위임
     await this.router.handle(request, response);
   }
 
